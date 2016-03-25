@@ -1,0 +1,5 @@
+autoencoder_logs*
+autoencoder_results*
+notMNIST*
+.idea
+*.pyc
