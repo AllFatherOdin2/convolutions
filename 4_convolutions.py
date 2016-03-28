@@ -10,6 +10,10 @@ import numpy as np
 
 pickle_file = 'notMNIST.pickle'
 
+dropoutGlobal = True;
+startLearningRate = 0.1;
+decay = .96
+
 with open(pickle_file, 'rb') as f:
   save = pickle.load(f)
   train_dataset = save['train_dataset']
@@ -75,8 +79,24 @@ with graph.as_default():
       [num_hidden, num_labels], stddev=0.1))
   layer4_biases = tf.Variable(tf.constant(1.0, shape=[num_labels]))
   
+  """
+  Original
   # Model.
   def model(data):
+    conv = tf.nn.conv2d(data, layer1_weights, [1, 2, 2, 1], padding='SAME')
+    hidden = tf.nn.relu(conv + layer1_biases)
+    conv = tf.nn.conv2d(hidden, layer2_weights, [1, 2, 2, 1], padding='SAME')
+    hidden = tf.nn.relu(conv + layer2_biases)
+    shape = hidden.get_shape().as_list()
+    reshape = tf.reshape(hidden, [shape[0], shape[1] * shape[2] * shape[3]])
+    hidden = tf.nn.relu(tf.matmul(reshape, layer3_weights) + layer3_biases)
+    return tf.matmul(hidden, layer4_weights) + layer4_biases
+
+  """
+
+
+  # Model.
+  def model(data, dropout = False):
     conv = tf.nn.conv2d(data, layer1_weights, [1, 1, 1, 1], padding='SAME')
     hidden = tf.nn.relu(conv + layer1_biases)
     pool = tf.nn.max_pool(hidden, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
@@ -89,15 +109,23 @@ with graph.as_default():
     shape = pool.get_shape().as_list()
     reshape = tf.reshape(pool, [shape[0], shape[1] * shape[2] * shape[3]])
     hidden = tf.nn.relu(tf.matmul(reshape, layer3_weights) + layer3_biases)
+
+    if(dropout):
+      hidden = tf.nn.dropout(hidden, dropoutGlobal)
+
     return tf.matmul(hidden, layer4_weights) + layer4_biases
   
   # Training computation.
   logits = model(tf_train_dataset)
-  loss = tf.reduce_mean(
-    tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
+  loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
     
   # Optimizer.
-  optimizer = tf.train.GradientDescentOptimizer(0.05).minimize(loss)
+  if(decay > 0):
+    global_step = tf.Variable(0, trainable=False)
+    learningRate = tf.train.exponential_decay(startLearningRate, global_step, 100000, decay, staircase=True)
+    optimizer = tf.train.GradientDescentOptimizer(learningRate).minimize(loss, global_step=global_step)
+  else:
+    optimizer = tf.train.GradientDescentOptimizer(0.05).minimize(loss)
   
   # Predictions for the training, validation, and test data.
   train_prediction = tf.nn.softmax(logits)
