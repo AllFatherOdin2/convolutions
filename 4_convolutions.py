@@ -10,9 +10,10 @@ import numpy as np
 
 pickle_file = 'notMNIST.pickle'
 
-dropoutGlobal = True;
-startLearningRate = 0.1;
-decay = .96
+dropoutGlobal = True
+startLearningRate = 0.1
+decay = .94
+dropoutKeepProp = 1
 
 with open(pickle_file, 'rb') as f:
   save = pickle.load(f)
@@ -110,8 +111,8 @@ with graph.as_default():
     reshape = tf.reshape(pool, [shape[0], shape[1] * shape[2] * shape[3]])
     hidden = tf.nn.relu(tf.matmul(reshape, layer3_weights) + layer3_biases)
 
-    if(dropout):
-      hidden = tf.nn.dropout(hidden, dropoutGlobal)
+    if(dropoutGlobal):
+      hidden = tf.nn.dropout(hidden, dropoutKeepProp)
 
     return tf.matmul(hidden, layer4_weights) + layer4_biases
   
