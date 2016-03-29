@@ -13,7 +13,7 @@ pickle_file = 'notMNIST.pickle'
 dropoutGlobal = True
 startLearningRate = 0.1
 decay = .94
-dropoutKeepProp = 1
+dropoutKeepProp = .75
 
 with open(pickle_file, 'rb') as f:
   save = pickle.load(f)
